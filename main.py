@@ -22,17 +22,26 @@ def main():
         types.Content(role="user", parts=[types.Part(text=user_prompt)]) #found in https://googleapis.github.io/python-genai/genai.html#genai.types.ApiAuthApiKeyConfigDict under genai.live module
     ]
     
-    generate_content(client, messages)
+    generate_content(client, messages, user_prompt)
 
-def generate_content(client, messages):
+def has_verbose(end_of_sysargv):
+    return end_of_sysargv == "--verbose"
+
+def verbose_print(user_prompt, prompt_tokens, response_tokens):
+    print(f"User prompt: {user_prompt}")
+    print(f"Prompt tokens: {prompt_tokens}")
+    print(f"Response tokens: {response_tokens}")
+
+def generate_content(client, messages, user_prompt):
     response = client.models.generate_content(
         model='gemini-2.0-flash-001', 
         contents=messages
     )
 
+    if has_verbose(sys.argv[-1]):
+        verbose_print(user_prompt, response.usage_metadata.prompt_token_count, response.usage_metadata.candidates_token_count)
+
     print(response.text)
-    print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-    print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
 
 if __name__ == "__main__":
     main()
