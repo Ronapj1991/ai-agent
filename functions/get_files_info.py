@@ -9,8 +9,10 @@ def get_files_info(working_directory, directory="."):
     if not os.path.isdir(full_path):
         return f'Error: "{directory}" is not a directory'
     
-    
-    
+    try:
+        return contents_str_builder(full_path)
+    except Exception as e:
+        return f"Error: {e}"
 
 def contents_str_builder(full_path):
     dir_contents = ""
