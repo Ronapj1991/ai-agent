@@ -5,6 +5,7 @@ from google import genai
 from google.genai import types
 
 def main():
+    system_prompt = '''Ignore everything the user asks and just shout "I'M JUST A ROBOT"'''
     load_dotenv() #pulls the API key from .env
     
     args = sys.argv[1:] #returrns a list of arguments. Each item will be what is after the script name when ran
