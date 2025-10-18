@@ -23,7 +23,7 @@ def main():
         types.Content(role="user", parts=[types.Part(text=user_prompt)]) #found in https://googleapis.github.io/python-genai/genai.html#genai.types.ApiAuthApiKeyConfigDict under genai.live module
     ]
     
-    generate_content(client, messages, user_prompt)
+    generate_content(client, messages, user_prompt, system_prompt)
 
 def has_verbose(end_of_sysargv):
     return end_of_sysargv == "--verbose"
@@ -33,10 +33,11 @@ def verbose_print(user_prompt, prompt_tokens, response_tokens):
     print(f"Prompt tokens: {prompt_tokens}")
     print(f"Response tokens: {response_tokens}")
 
-def generate_content(client, messages, user_prompt):
+def generate_content(client, messages, user_prompt, system_prompt):
     response = client.models.generate_content(
         model='gemini-2.0-flash-001', 
-        contents=messages
+        contents=messages,
+        config=types.GenerateContentConfig(system_instruction=system_prompt)
     )
 
     if has_verbose(sys.argv[-1]):
