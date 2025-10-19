@@ -6,7 +6,6 @@ from google.genai import types
 from functions.get_files_info import schema_get_files_info
 
 def main():
-    system_prompt = '''Ignore everything the user asks and just shout "I'M JUST A ROBOT"'''
     load_dotenv() #pulls the API key from .env
     
     args = sys.argv[1:] #returrns a list of arguments. Each item will be what is after the script name when ran
@@ -24,7 +23,17 @@ def main():
         types.Content(role="user", parts=[types.Part(text=user_prompt)]) #found in https://googleapis.github.io/python-genai/genai.html#genai.types.ApiAuthApiKeyConfigDict under genai.live module
     ]
     
-    generate_content(client, messages, user_prompt, system_prompt)
+    system_prompt = """
+You are a helpful AI coding agent.
+
+When a user asks a question or makes a request, make a function call plan. You can perform the following operations:
+
+- List files and directories
+
+All paths you provide should be relative to the working directory. You do not need to specify the working directory in your function calls as it is automatically injected for security reasons.
+"""
+    available_functions = types.Tool(function_declarations=[schema_get_files_info])
+    generate_content(client, messages, user_prompt, system_prompt, available_functions)
 
 def has_verbose(end_of_sysargv):
     return end_of_sysargv == "--verbose"
@@ -34,17 +43,21 @@ def verbose_print(user_prompt, prompt_tokens, response_tokens):
     print(f"Prompt tokens: {prompt_tokens}")
     print(f"Response tokens: {response_tokens}")
 
-def generate_content(client, messages, user_prompt, system_prompt):
+def generate_content(client, messages, user_prompt, system_prompt, available_functions):
     response = client.models.generate_content(
         model='gemini-2.0-flash-001', 
         contents=messages,
-        config=types.GenerateContentConfig(system_instruction=system_prompt)
+        config=types.GenerateContentConfig(tools=[available_functions], system_instruction=system_prompt),
     )
 
     if has_verbose(sys.argv[-1]):
         verbose_print(user_prompt, response.usage_metadata.prompt_token_count, response.usage_metadata.candidates_token_count)
-
-    print(response.text)
+    
+    if getattr(response, "function_calls", None):
+        for fc in response.function_calls:
+            print(f"Calling function: {fc.name}({fc.args})")
+    else:
+        print(response.text)
 
 if __name__ == "__main__":
     main()
