@@ -1,5 +1,8 @@
 import os
 
+from google import genai
+from google.genai import types
+
 def write_file(working_directory, file_path, content):
     wd_path = os.path.abspath(working_directory) 
     fp_full = os.path.abspath(os.path.join(wd_path, file_path))
@@ -14,4 +17,23 @@ def write_file(working_directory, file_path, content):
         return f'Successfully wrote to "{file_path}" ({len(content)} characters written)'
     except Exception as e:
         return f"Error: {e}"
+
+schema_write_file = types.FunctionDeclaration(
+    name="write_file",
+    description="Write or overwrite a file with the given text content.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        required=["file_path", "content"],
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="Path to the file to write."
+            ),
+            "content": types.Schema(
+                type=types.Type.STRING,
+                description="Text content to write."
+            )
+        }
+    )
+)
     
