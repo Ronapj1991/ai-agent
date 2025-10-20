@@ -2,6 +2,9 @@ import os
 import sys
 import subprocess
 
+from google import genai
+from google.genai import types
+
 def run_python_file(working_directory, file_path, args=[]):
     working_directory_abs = os.path.abspath(working_directory)
     full_path = os.path.join(working_directory_abs, file_path)
@@ -36,3 +39,23 @@ def run_python_file(working_directory, file_path, args=[]):
         output = "No output produced."
     
     return output
+
+schema_run_python_file = types.FunctionDeclaration(
+    name="run_python_file",
+    description="Execute a Python file with optional arguments.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        required=["file_path"],
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="Path to the Python file to run."
+            ),
+            "args": types.Schema(
+                type=types.Type.ARRAY,
+                items=types.Schema(type=types.Type.STRING),
+                description="Optional command-line arguments to pass."
+            )
+        }
+    )
+)
