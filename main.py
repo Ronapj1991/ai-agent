@@ -9,6 +9,7 @@ from functions.get_files_info import schema_get_files_info
 from functions.get_file_content import schema_get_file_content
 from functions.write_file import schema_write_file
 from functions.run_python_file import schema_run_python_file
+from functions.call_function import call_function
 
 def main():
     load_dotenv() #pulls the API key from .env
@@ -63,7 +64,11 @@ def generate_content(client, messages, user_prompt, system_prompt, available_fun
     
     if getattr(response, "function_calls", None):
         for fc in response.function_calls:
-            print(f"Calling function: {fc.name}({fc.args})")
+            result = call_function(fc, has_verbose(sys.argv[-1]))
+            if not result.parts[0].function_response.response:
+                raise Exception("Fatal Exception")
+            if has_verbose(sys.argv[-1]):
+                print(f"-> {result.parts[0].function_response.response}")
     else:
         print(response.text)
 

@@ -33,3 +33,12 @@ def call_function(function_call_part, verbose=False):
     new_kwargs = {**function_call_part.args, "working_directory":"./calculator"}
     result = func(**new_kwargs)
     
+    return types.Content(
+        role="tool",
+        parts=[
+            types.Part.from_function_response(
+                name=function_call_part.name,
+                response={"result": result},
+            )
+        ],
+    )
