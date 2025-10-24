@@ -58,6 +58,9 @@ def generate_content(client, messages, user_prompt, system_prompt, available_fun
         contents=messages,
         config=types.GenerateContentConfig(tools=[available_functions], system_instruction=system_prompt),
     )
+    
+    for candidate in response.candidates:
+        messages.append(candidate.content)
 
     if has_verbose(sys.argv[-1]):
         verbose_print(user_prompt, response.usage_metadata.prompt_token_count, response.usage_metadata.candidates_token_count)
@@ -71,6 +74,7 @@ def generate_content(client, messages, user_prompt, system_prompt, available_fun
                 print(f"-> {result.parts[0].function_response.response}")
     else:
         print(response.text)
+        
 
 if __name__ == "__main__":
     main()
