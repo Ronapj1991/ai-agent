@@ -66,7 +66,6 @@ def verbose_print(user_prompt, prompt_tokens, response_tokens):
     print(f"Prompt tokens: {prompt_tokens}")
     print(f"Response tokens: {response_tokens}")
 
-# python
 def generate_content(client, messages, user_prompt, system_prompt, available_functions):
     executed_call = False
     response = client.models.generate_content(
