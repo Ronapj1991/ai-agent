@@ -10,6 +10,7 @@ from functions.get_file_content import schema_get_file_content
 from functions.write_file import schema_write_file
 from functions.run_python_file import schema_run_python_file
 from functions.call_function import call_function
+from config import *
 
 def main():
     load_dotenv() #pulls the API key from .env
@@ -42,7 +43,20 @@ When a user asks a question or makes a request, make a function call plan. You c
 All paths you provide should be relative to the working directory. You do not need to specify the working directory in your function calls as it is automatically injected for security reasons.
 """
     available_functions = types.Tool(function_declarations=[schema_get_files_info, schema_get_file_content, schema_write_file, schema_run_python_file])
-    generate_content(client, messages, user_prompt, system_prompt, available_functions)
+    
+    current_iterations = 0
+    while current_iterations < MAX_ITERATIONS:
+        try:
+            content, executed_call = generate_content(client, messages, user_prompt, system_prompt, available_functions)
+            if content.text and not executed_call:
+                print(content.text)
+                break
+        except Exception as e:
+            print(f"Error: {e}")
+        current_iterations += 1
+        if current_iterations == MAX_ITERATIONS:
+            print("Max iterations reached")
+            sys.exit(1)
 
 def has_verbose(end_of_sysargv):
     return end_of_sysargv == "--verbose"
@@ -52,29 +66,33 @@ def verbose_print(user_prompt, prompt_tokens, response_tokens):
     print(f"Prompt tokens: {prompt_tokens}")
     print(f"Response tokens: {response_tokens}")
 
+# python
 def generate_content(client, messages, user_prompt, system_prompt, available_functions):
+    executed_call = False
     response = client.models.generate_content(
-        model='gemini-2.0-flash-001', 
+        model="gemini-2.0-flash-001",
         contents=messages,
-        config=types.GenerateContentConfig(tools=[available_functions], system_instruction=system_prompt),
+        config=types.GenerateContentConfig(
+            tools=[available_functions],
+            system_instruction=system_prompt,
+        ),
     )
-    
+
     for candidate in response.candidates:
         messages.append(candidate.content)
+        for part in candidate.content.parts:
+            fc = getattr(part, "function_call", None)
+            if fc:
+                executed_call = True
+                result = call_function(fc, has_verbose(sys.argv[-1]))
+                if getattr(result, "role", None) != "user":
+                    result = types.Content(role="user", parts=result.parts)
+                messages.append(result)
 
     if has_verbose(sys.argv[-1]):
         verbose_print(user_prompt, response.usage_metadata.prompt_token_count, response.usage_metadata.candidates_token_count)
-    
-    if getattr(response, "function_calls", None):
-        for fc in response.function_calls:
-            result = call_function(fc, has_verbose(sys.argv[-1]))
-            if not result.parts[0].function_response.response:
-                raise Exception("Fatal Exception")
-            if has_verbose(sys.argv[-1]):
-                print(f"-> {result.parts[0].function_response.response}")
-    else:
-        print(response.text)
-        
+
+    return response, executed_call
 
 if __name__ == "__main__":
     main()
